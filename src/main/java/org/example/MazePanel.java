@@ -81,62 +81,101 @@ public class MazePanel extends JPanel {
         graphics.drawImage(this.image,0,0,null);
 
    }
-   public boolean findPath (){
-        int h=this.image.getHeight();
-        int w =this.image.getWidth();
-        Point [] steps ={new Point(1,0),
-                new Point(-1,0),new Point(0,1),
-                new Point(0,-1)};
-        boolean [][] visited=new boolean[h][w];
-        Point [][]parent =new Point[h][w];
-       Queue<Point>queue=new ArrayDeque<>();
-       queue.add(new Point(0,0));
-       visited [0][0]=true;
-       while (!queue.isEmpty()){
-           Point current = queue.poll();
-           if (current.x==w-1&&current.y==h-1){
-               drawPath(parent,current);
-               repaint();
-               return true;
-           }
-           for (int i = 0; i <steps.length ; i++) {
-               int neX = current.x + steps[i].x;
-               int neY = current.y + steps[i].y;
-               if (neX>=0&& neX<w&&neY>=0&&neY<h){//בתוך גבולות המסך
-                   int rgb = this.image.getRGB(neX,neY);
-                   Color color= new Color(rgb);
-                   if (color.equals(Color.WHITE) &&!visited[neX][neY]){
-                      visited[neX][neY] =true;
-                      parent[neY][neX] = current;
-                      queue.add(new Point(neX,neY));
-                   }
-               }
-           }
-       }
-   JOptionPane.showMessageDialog(this,"no path pound");
-       return false;
 
-   }
+    public boolean findPath() {
+
+        int h = image.getHeight();
+        int w = image.getWidth();
+
+        Point start = findFirstWhite(image);
+        Point goal  = findLastWhite(image);
+
+
+        if (start == null || goal == null) {
+            JOptionPane.showMessageDialog(this, "No white start/goal pixel");
+            return false;
+        }
+
+        Point[] steps = {
+                new Point(1,0),  new Point(-1,0), new Point(0,1),  new Point(0,-1),
+                new Point(1,1),  new Point(1,-1), new Point(-1,1), new Point(-1,-1)
+        };
+
+        boolean[][] visited = new boolean[h][w];
+        Point   [][] parent  = new Point  [h][w];
+
+        Queue<Point> q = new ArrayDeque<>();
+        q.add(start);
+        visited[start.y][start.x] = true;
+
+        while (!q.isEmpty()) {
+            Point cur = q.poll();
+            if (cur.equals(goal)) {
+                drawPath(parent, cur);
+                repaint();
+                return true;
+            }
+            for (Point d : steps) {
+                int nx = cur.x + d.x, ny = cur.y + d.y;
+                if (nx >= 0 && nx < w && ny >= 0 && ny < h &&
+                        !visited[ny][nx] &&
+                        (image.getRGB(nx, ny) & 0xFFFFFF) == 0xFFFFFF) {
+                    visited[ny][nx] = true;
+                    parent [ny][nx] = cur;
+                    q.add(new Point(nx, ny));
+                }
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, "No path found");
+        return false;
+    }
+
+
 
     private void drawPath(Point[][] parent, Point current) {
-        Graphics2D graphics2D = this.image.createGraphics();
-        graphics2D.setStroke(new BasicStroke(3));
-        graphics2D.setColor(Color.GREEN);
 
-        while (current!=null){
-            int x = current.x *20 + 10;
-            int y = current.y *20 + 10;
-            graphics2D.fillOval(x-2,y-2,4,4);
-            Point parentPoint  = parent[current.y][current.x];
-            if (parentPoint!=null){
-                int xP = current.x *20 + 10;
-                int yP = current.y *20 + 10;
-                graphics2D.drawLine(x,y,xP,yP);
+        Graphics2D g = image.createGraphics();
+        g.setColor(Color.GREEN);
+        g.setStroke(new BasicStroke(3));
+
+        while (current != null) {
+            g.fillOval(current.x - 2, current.y - 2, 4, 4);
+
+            Point p = parent[current.y][current.x];
+            if (p != null) {
+                g.drawLine(current.x, current.y, p.x, p.y);
             }
-            current = parentPoint;
+            current = p;
         }
-        graphics2D.dispose();
+        g.dispose();
     }
+
+    private Point findFirstWhite(BufferedImage img) {
+        int h = img.getHeight(), w = img.getWidth();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                if ((img.getRGB(x, y) & 0xFFFFFF) == 0xFFFFFF) {
+                    return new Point(x, y);
+                }
+            }
+        }
+        return null;
+    }
+
+    private Point findLastWhite(BufferedImage img) {
+        int h = img.getHeight(), w = img.getWidth();
+        for (int y = h - 1; y >= 0; y--) {
+            for (int x = w - 1; x >= 0; x--) {
+                if ((img.getRGB(x, y) & 0xFFFFFF) == 0xFFFFFF) {
+                    return new Point(x, y);
+                }
+            }
+        }
+        return null;
+    }
+
+
 }
 
 
